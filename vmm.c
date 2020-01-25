@@ -81,7 +81,7 @@ static struct regs_ia32 guest_regs = {
 	.esp	  = 0x7FFA,
 	.ss	  = 0x0000,
 
-	// put recognizable values in the other registers 
+	// put recognizable values in the other registers
 	.eax	= 0xAAAAAAAA,
 	.ebx	= 0xBBBBBBBB,
 	.ecx	= 0xCCCCCCCC,
@@ -102,17 +102,17 @@ void enable_vmx(void *not_used)
 	unsigned long val;
 	unsigned long old;
 	int cpu = smp_processor_id();
-	
-	asm volatile ("mov %%cr4, %0\n\t"
-		      : "=r" (val), "=m" (__force_order));
+
+	asm volatile("mov %%cr4, %0\n\t"
+	             : "=r"(val), "=m"(__force_order));
 	old = val;
 
 	val |= (1UL << 13);
-	asm volatile ("mov %0, %%cr4\n\t"
-		      :
-		      : "r" (val), "m" (__force_order));
-	asm volatile ("mov %%cr4, %0\n\t"
-		      : "=r" (val), "=m" (__force_order));
+	asm volatile("mov %0, %%cr4\n\t"
+	             :
+	             : "r"(val), "m"(__force_order));
+	asm volatile("mov %%cr4, %0\n\t"
+	             : "=r"(val), "=m"(__force_order));
 	pr_warn("cpu=%d cr4=%lx => %lx", cpu, old, val);
 }
 
@@ -122,16 +122,16 @@ void disable_vmx(void *not_used)
 	unsigned long old;
 	int cpu = smp_processor_id();
 
-	asm volatile ("mov %%cr4, %0\n\t"
-		      : "=r" (val), "=m" (__force_order));
+	asm volatile("mov %%cr4, %0\n\t"
+	             : "=r"(val), "=m"(__force_order));
 	old = val;
 
 	val &= ~(1UL << 13);
-	asm volatile ("mov %0, %%cr4\n\t"
-		      :
-		      : "r" (val), "m" (__force_order));
-	asm volatile ("mov %%cr4, %0\n\t"
-		      : "=r" (val), "=m" (__force_order));
+	asm volatile("mov %0, %%cr4\n\t"
+	             :
+	             : "r"(val), "m"(__force_order));
+	asm volatile("mov %%cr4, %0\n\t"
+	             : "=r"(val), "=m"(__force_order));
 	pr_warn("cpu=%d cr4=%lx => %lx", cpu, old, val);
 }
 
@@ -150,12 +150,12 @@ int check_feature(void)
 	u64 old;
 
 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
-	pr_warn("---MST_IA32_FEATURE_CONTROL=%llx\n", old);
-	pr_warn("FEATURE_CONTROL_LOCKED=%d\n", !!(old & (1<<0)));
-	pr_warn("FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX=%d\n", !!(old & (1<<2)));
-	if (!(old & (1<<0)) || !(old & (1<<2)))
+	pr_warn("MST_IA32_FEATURE_CONTROL=%llx\n", old);
+	pr_warn("FEATURE_CONTROL_LOCKED=%d\n", !!(old & (1 << 0)));
+	pr_warn("FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX=%d\n", !!(old & (1 << 2)));
+	if (!(old & (1 << 0)) || !(old & (1 << 2)))
 		pr_warn("FEATURE_CONTROL error=%lldx\n", old);
-	return (old & (1<<0)) && (old & (1<<2));
+	return (old & (1 << 0)) && (old & (1 << 2));
 }
 
 void setup_guest_mmu(void)
@@ -170,8 +170,8 @@ void setup_guest_mmu(void)
 	page_regions = __get_free_pages(GFP_KERNEL, order); // 16pages
 	for (i = 0; i < (1 << order); i++) {
 		page_dir[i] = __pa(page_regions) /* base */
-			+ (i << PAGE_SHIFT) /* page# */
-			+ 0x7 /* flag */;
+		              + (i << PAGE_SHIFT) /* page# */
+		              + 0x7 /* flag */;
 	}
 	page_table[0] = __pa(page_dir) + 0x7;
 }
@@ -214,8 +214,8 @@ void run_16bit_vm(void)
 	/*
 	 * setup guest program
 	 */
-	pr_warn("interrupt-0x%02X: ", interrupt_number );
-	pr_warn("vector = %08X \n", vector );
+	pr_warn("interrupt-0x%02X: ", interrupt_number);
+	pr_warn("vector = %08X \n", vector);
 
 	// setup transition to our Virtual Machine Monitor
 	eoi[ 0 ] = 0x90C1010F;	// 'vmcall' instruction
@@ -235,13 +235,13 @@ void run_16bit_vm(void)
 
 
 
-	
+
 	phy_vmcs = __pa(vmxon_region);
 	pr_warn("phy-vmcs=%llx\n", phy_vmcs);
-	asm volatile (ASM_VMX_VMXON_RAX
-		      :
-		      : "a" (&phy_vmcs), "m" (phy_vmcs)
-		      : "memory", "cc");
+	asm volatile(ASM_VMX_VMXON_RAX
+	             :
+	             : "a"(&phy_vmcs), "m"(phy_vmcs)
+	             : "memory", "cc");
 	pr_warn("vmcs:id=%d\n", vmxon_region->revision_id);
 
 
@@ -249,7 +249,7 @@ void run_16bit_vm(void)
 
 static int __init mybrd_init(void)
 {
-	
+
 	pr_warn("===============\n");
 
 	/*
@@ -267,7 +267,7 @@ static int __init mybrd_init(void)
 	smp_call_function(enable_vmx, NULL, 1);
 
 	run_16bit_vm();
-	
+
 	return 0;
 }
 
