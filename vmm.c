@@ -48,12 +48,14 @@ static struct my_vmcs *guest_region;
 /* page tables of MMU of guest */
 static u32 *page_dir;
 static u32 *page_table;
+/*
 static unsigned long g_IDT_region;
 static unsigned long g_GDT_region;
 static unsigned long g_LDT_region;
 static unsigned long g_TSS_region;
 static unsigned long g_TOS_region;
 static unsigned long h_MSR_region;
+*/
 
 struct regs_ia32 {
 	unsigned int	eip;
@@ -75,22 +77,22 @@ struct regs_ia32 {
 };
 
 static struct regs_ia32 guest_regs = {
-	.eflags = 0x00023000;
-	.esp	  = 0x7FFA;
-	.ss	  = 0x0000;
+	.eflags = 0x00023000,
+	.esp	  = 0x7FFA,
+	.ss	  = 0x0000,
 
 	// put recognizable values in the other registers 
-	.eax	= 0xAAAAAAAA;
-	.ebx	= 0xBBBBBBBB;
-	.ecx	= 0xCCCCCCCC;
-	.edx	= 0xDDDDDDDD;
-	.ebp	= 0xBBBBBBBB;
-	.esi	= 0xCCCCCCCC;
-	.edi	= 0xDDDDDDDD;
-	.ds	= 0xDDDD;
-	.es	= 0xEEEE;
-	.fs	= 0x8888;
-	.gs	= 0x9999;
+	.eax	= 0xAAAAAAAA,
+	.ebx	= 0xBBBBBBBB,
+	.ecx	= 0xCCCCCCCC,
+	.edx	= 0xDDDDDDDD,
+	.ebp	= 0xBBBBBBBB,
+	.esi	= 0xCCCCCCCC,
+	.edi	= 0xDDDDDDDD,
+	.ds	= 0xDDDD,
+	.es	= 0xEEEE,
+	.fs	= 0x8888,
+	.gs	= 0x9999,
 };
 
 
@@ -148,7 +150,7 @@ int check_feature(void)
 	u64 old;
 
 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
-	pr_warn("MST_IA32_FEATURE_CONTROL=%llx\n", old);
+	pr_warn("---MST_IA32_FEATURE_CONTROL=%llx\n", old);
 	pr_warn("FEATURE_CONTROL_LOCKED=%d\n", !!(old & (1<<0)));
 	pr_warn("FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX=%d\n", !!(old & (1<<2)));
 	if (!(old & (1<<0)) || !(old & (1<<2)))
@@ -162,12 +164,12 @@ void setup_guest_mmu(void)
 	int order = 4;
 	int i;
 
-	page_dir = (unsigned long *)__get_free_page(GFP_KERNEL);
-	page_table = (unsigned long *)__get_free_page(GFP_KERNEL);
+	page_dir = (u32 *)__get_free_page(GFP_KERNEL);
+	page_table = (u32 *)__get_free_page(GFP_KERNEL);
 
 	page_regions = __get_free_pages(GFP_KERNEL, order); // 16pages
 	for (i = 0; i < (1 << order); i++) {
-		page_dir[i] = __pa(page_region) /* base */
+		page_dir[i] = __pa(page_regions) /* base */
 			+ (i << PAGE_SHIFT) /* page# */
 			+ 0x7 /* flag */;
 	}
@@ -183,7 +185,7 @@ void run_16bit_vm(void)
 	 * BUGBUG: what is 0x11??
 	 */
 	unsigned int	interrupt_number = 0x11;  // <--changed on 5/4/2007
-	unsigned int	vector = *(unsigned int*)( interrupt_number << 2 );
+	unsigned int	vector = *(u32 *)((u64)(interrupt_number << 2));
 	// plant the 'return' stack and code
 	unsigned short	*tos = (unsigned short*)0x8000;
 	unsigned int	*eoi = (unsigned int*)0x8000;
@@ -222,8 +224,8 @@ void run_16bit_vm(void)
 	tos[ -2 ] = 0x0000;	// image of CS
 	tos[ -3 ] = 0x8000;	// image of IP
 
-	regs.eip = vector & 0xFFFF;
-	regs.cs = (vector >> 16);
+	guest_regs.eip = vector & 0xFFFF;
+	guest_regs.cs = (vector >> 16);
 
 
 	/*
@@ -248,12 +250,13 @@ void run_16bit_vm(void)
 static int __init mybrd_init(void)
 {
 	
-	pr_warn("\n\n\nmybrd: module loaded\n\n\n\n");
+	pr_warn("===============\n");
 
 	/*
 	 * check msr
 	 */
 	if (!check_feature()) {
+		printk("Quit\n");
 		return 0;
 	}
 
